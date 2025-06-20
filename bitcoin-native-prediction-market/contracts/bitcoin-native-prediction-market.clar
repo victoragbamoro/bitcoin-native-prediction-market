@@ -227,3 +227,28 @@
     (asserts! (is-eq tx-sender contract-owner) error-unauthorized)
     (var-set protocol-fee-collector new-collector)
     (ok true)))
+
+(define-data-var max-liquidity-per-market uint u1000000000000) ;; 1 million STX max per market
+
+(define-public (set-max-liquidity (max-amount uint))
+  (begin
+    (asserts! (is-eq tx-sender contract-owner) error-unauthorized)
+    (var-set max-liquidity-per-market max-amount)
+    (ok true)))
+
+(define-public (withdraw-oracle-stake (amount uint))
+  (let ((oracle (unwrap! (map-get? oracles tx-sender) error-not-oracle))
+        (current-stake (get stake oracle))
+        (remaining-stake (- current-stake amount)))
+    
+    ;; Ensure minimum stake remains
+    (asserts! (>= remaining-stake min-stake) error-invalid-amount)
+    
+    ;; Transfer stake back to oracle
+    (as-contract (try! (stx-transfer? amount tx-sender tx-sender)))
+    
+    ;; Update oracle stake
+    (map-set oracles tx-sender
+      (merge oracle { stake: remaining-stake }))
+    
+    (ok true)))
