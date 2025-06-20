@@ -125,4 +125,47 @@
     
     (ok true)))
 
+;; Helper functions for enum conversions
+
+(define-private (get-market-status-buff (status (buff 1)))
+  status)
+
+(define-private (get-outcome-type-buff (type (buff 1)))
+  type)
+
+(define-private (get-oracle-status-buff (status (buff 1)))
+  status)
+
+(define-private (get-dispute-status-buff (status (buff 1)))
+  status)
+
+;; Get market details
+(define-read-only (get-market (market-id uint))
+  (map-get? markets market-id))
+
+;; Get market outcome pool
+(define-read-only (get-outcome-pool (market-id uint) (outcome (string-ascii 50)))
+  (map-get? liquidity-pools { market-id: market-id, outcome: outcome }))
+
+;; Get user position
+(define-read-only (get-user-position (market-id uint) (user principal) (outcome (string-ascii 50)))
+  (map-get? positions { market-id: market-id, user: user, outcome: outcome }))
+
+;; Get oracle details
+(define-read-only (get-oracle (oracle-address principal))
+  (map-get? oracles oracle-address))
+
+;; Get market odds for an outcome
+(define-read-only (get-market-odds (market-id uint) (outcome (string-ascii 50)))
+  (let ((market (map-get? markets market-id))
+        (pool (map-get? liquidity-pools { market-id: market-id, outcome: outcome })))
+    (match market
+      market-data (match pool
+                    pool-data (let ((outcome-amount (get amount pool-data))
+                                   (total-liquidity (get total-liquidity market-data)))
+                                (if (> total-liquidity u0)
+                                  (ok (/ (* outcome-amount u1000) total-liquidity))
+                                  (ok u0)))
+                    (err error-invalid-market))
+      (err error-invalid-market))))
 
