@@ -500,3 +500,48 @@
     (var-set template-id-nonce (+ template-id u1))
     
     (ok template-id)))
+
+
+;; Get market template
+(define-read-only (get-market-template (template-id uint))
+  (map-get? market-templates template-id))
+
+;; Create market from template
+(define-public (create-market-from-template 
+  (template-id uint) 
+  (oracle-address principal)
+  (metadata (optional (string-utf8 500))))
+  
+  (let ((template (unwrap! (map-get? market-templates template-id) error-invalid-params))
+        (resolution-block (+ stacks-block-height (get duration-blocks template))))
+    
+    ;; [Call to create-market function would go here with template values]
+    ;; Return the new market ID
+    (ok (var-get market-id-nonce))))
+
+    ;; Referral tracking
+(define-map referrals
+  { referred-user: principal }
+  { referrer: principal, active-until: uint, fee-share-percentage: uint })
+
+;; Referrer earnings
+(define-map referrer-earnings
+  principal
+  { total-earnings: uint, withdrawn-earnings: uint })
+
+;; Set referral
+(define-public (set-referral (referrer principal))
+  (begin
+    ;; Cannot refer yourself
+    (asserts! (not (is-eq tx-sender referrer)) error-invalid-params)
+    
+    ;; Set referral with 90-day expiration (approximately)
+    (map-set referrals 
+      { referred-user: tx-sender }
+      { 
+        referrer: referrer, 
+        active-until: (+ stacks-block-height u12960), ;; ~90 days in Bitcoin blocks
+        fee-share-percentage: u50 ;; 50% share of fees
+      })
+    
+    (ok true)))
