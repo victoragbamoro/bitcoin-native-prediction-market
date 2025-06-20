@@ -545,3 +545,48 @@
       })
     
     (ok true)))
+
+;; Check if referral is active
+(define-read-only (is-referral-active (user principal))
+  (match (map-get? referrals { referred-user: user })
+    referral (< stacks-block-height (get active-until referral))
+    false))
+
+;; Get referrer for user
+(define-read-only (get-referrer (user principal))
+  (match (map-get? referrals { referred-user: user })
+    referral (some (get referrer referral))
+    none))
+
+;; Update referrer earnings (would be called during fee collection)
+(define-private (update-referrer-earnings (referrer principal) (amount uint))
+  (let ((current-earnings (default-to { total-earnings: u0, withdrawn-earnings: u0 } 
+                          (map-get? referrer-earnings referrer))))
+    (map-set referrer-earnings
+      referrer
+      { 
+        total-earnings: (+ (get total-earnings current-earnings) amount),
+        withdrawn-earnings: (get withdrawn-earnings current-earnings)
+      })))
+
+;; Withdraw referrer earnings
+(define-public (withdraw-referrer-earnings)
+  (let ((earnings (default-to { total-earnings: u0, withdrawn-earnings: u0 } 
+                  (map-get? referrer-earnings tx-sender)))
+        (available (- (get total-earnings earnings) (get withdrawn-earnings earnings))))
+    
+    ;; Check if anything to withdraw
+    (asserts! (> available u0) error-invalid-withdrawal)
+    
+    ;; Transfer earnings
+    (as-contract (try! (stx-transfer? available tx-sender tx-sender)))
+    
+    ;; Update withdrawn amount
+    (map-set referrer-earnings
+      tx-sender
+      { 
+        total-earnings: (get total-earnings earnings),
+        withdrawn-earnings: (+ (get withdrawn-earnings earnings) available)
+      })
+    
+    (ok available)))
