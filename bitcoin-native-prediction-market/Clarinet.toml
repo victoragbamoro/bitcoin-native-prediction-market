@@ -1,0 +1,19 @@
+[project]
+name = 'bitcoin-native-prediction-market'
+description = ''
+authors = []
+telemetry = true
+cache_dir = './.cache'
+requirements = []
+[contracts.bitcoin-native-prediction-market]
+path = 'contracts/bitcoin-native-prediction-market.clar'
+clarity_version = 3
+epoch = 3.0
+[repl.analysis]
+passes = ['check_checker']
+
+[repl.analysis.check_checker]
+strict = false
+trusted_sender = false
+trusted_caller = false
+callee_filter = false
