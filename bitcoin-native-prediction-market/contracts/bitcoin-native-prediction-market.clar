@@ -252,3 +252,22 @@
       (merge oracle { stake: remaining-stake }))
     
     (ok true)))
+
+(define-map market-oracles
+  { market-id: uint, oracle: principal }
+  { added-by: principal, weight: uint })
+
+(define-map liquidity-providers
+  { market-id: uint, provider: principal, outcome: (string-ascii 50) }
+  { amount: uint, block-added: uint })
+
+(define-map user-activity
+  principal
+  {
+    markets-participated: uint,
+    total-volume: uint,
+    last-activity-block: uint,
+    positions-count: uint,
+    wins: uint,
+    losses: uint
+  })
