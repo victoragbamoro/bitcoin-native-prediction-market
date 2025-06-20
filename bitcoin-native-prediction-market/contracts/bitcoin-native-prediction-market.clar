@@ -590,3 +590,36 @@
       })
     
     (ok available)))
+;; Get referrer earnings
+(define-read-only (get-referrer-earnings (referrer principal))
+  (let ((earnings (default-to { total-earnings: u0, withdrawn-earnings: u0 } 
+                  (map-get? referrer-earnings referrer))))
+    {
+      total: (get total-earnings earnings),
+      withdrawn: (get withdrawn-earnings earnings),
+      available: (- (get total-earnings earnings) (get withdrawn-earnings earnings))
+    }))
+
+;; Popular markets list (manually curated)
+(define-map popular-markets
+  uint ;; ranking position
+  uint ;; market-id
+)
+
+;; Set popular market (admin only)
+(define-public (set-popular-market (position uint) (market-id uint))
+  (begin
+    (asserts! (is-eq tx-sender contract-owner) error-unauthorized)
+    (map-set popular-markets position market-id)
+    (ok true)))
+
+
+;; Get popular markets
+(define-read-only (get-popular-markets)
+  (list
+    (map-get? popular-markets u1)
+    (map-get? popular-markets u2)
+    (map-get? popular-markets u3)
+    (map-get? popular-markets u4)
+    (map-get? popular-markets u5)
+  ))
