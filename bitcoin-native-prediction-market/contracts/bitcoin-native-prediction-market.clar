@@ -441,3 +441,62 @@
       { user: tx-sender, notification-id: notification-id }
       (merge notification { read: true }))
     (ok true)))
+
+    ;; Market templates storage
+(define-map market-templates 
+  uint 
+  {
+    title: (string-ascii 100),
+    description: (string-utf8 500),
+    outcome-type: (buff 1),
+    possible-outcomes: (list 10 (string-ascii 50)),
+    duration-blocks: uint,
+    oracle-fee: uint,
+    market-fee: uint,
+    category: (string-ascii 20),
+    tags: (list 5 (string-ascii 20)),
+    outcome-values: (optional (list 10 uint)),
+    creator: principal
+  })
+
+(define-data-var template-id-nonce uint u0)
+
+;; Create a market template
+(define-public (create-market-template
+  (title (string-ascii 100))
+  (description (string-utf8 500))
+  (outcome-type (buff 1))
+  (possible-outcomes (list 10 (string-ascii 50)))
+  (duration-blocks uint)
+  (oracle-fee uint)
+  (market-fee uint)
+  (category (string-ascii 20))
+  (tags (list 5 (string-ascii 20)))
+  (outcome-values (optional (list 10 uint))))
+  
+  (let ((template-id (var-get template-id-nonce)))
+    ;; Validate params
+    (asserts! (and (>= duration-blocks min-market-duration)
+                   (<= duration-blocks max-market-duration)) error-invalid-params)
+    (asserts! (and (<= oracle-fee u100)
+                   (<= market-fee u100)) error-invalid-fee)
+    
+    ;; Store template
+    (map-set market-templates template-id {
+      title: title,
+      description: description,
+      outcome-type: outcome-type,
+      possible-outcomes: possible-outcomes,
+      duration-blocks: duration-blocks,
+      oracle-fee: oracle-fee,
+      market-fee: market-fee,
+      category: category,
+      tags: tags,
+      outcome-values: outcome-values,
+      creator: tx-sender
+    })
+    
+    ;; Increment template id
+    (var-set template-id-nonce (+ template-id u1))
+    
+    (ok template-id)))
