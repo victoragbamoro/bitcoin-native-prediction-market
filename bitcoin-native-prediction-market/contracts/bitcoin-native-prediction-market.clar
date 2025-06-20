@@ -308,3 +308,46 @@
 (define-constant error-invalid-oracle (err u22))
 (define-constant error-invalid-fee (err u23))
 (define-constant error-invalid-category (err u24))
+
+;; Example from add-market-liquidity
+(asserts! (not (var-get protocol-paused)) error-paused)
+
+;; Define market categories
+(define-map market-categories
+  uint
+  {
+    category: (string-ascii 20),
+    subcategory: (optional (string-ascii 30))
+  })
+
+;; Mapping of categories to market-ids
+(define-map category-markets
+  (string-ascii 20)
+  (list 100 uint))
+
+;; Get markets by category
+(define-read-only (get-markets-by-category (category (string-ascii 20)))
+  (default-to (list) (map-get? category-markets category)))
+
+;; Check if category is valid
+(define-read-only (is-valid-category (category (string-ascii 20)))
+  (or 
+    (is-eq category "sports")
+    (is-eq category "crypto")
+    (is-eq category "politics")
+    (is-eq category "finance")
+    (is-eq category "entertainment")
+    (is-eq category "science")
+    (is-eq category "other")))
+
+;; Get market category
+(define-read-only (get-market-category (market-id uint))
+  (map-get? market-categories market-id))
+
+;; Helper to check if sender is market creator or contract owner
+(define-private (is-market-creator-or-owner (market-id uint))
+  (let ((market (map-get? markets market-id)))
+    (match market
+      market-data (or (is-eq tx-sender (get creator market-data))
+                      (is-eq tx-sender contract-owner))
+      false)))
