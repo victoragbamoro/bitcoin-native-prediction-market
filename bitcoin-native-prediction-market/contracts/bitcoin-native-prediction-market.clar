@@ -351,3 +351,36 @@
       market-data (or (is-eq tx-sender (get creator market-data))
                       (is-eq tx-sender contract-owner))
       false)))
+
+;; Market tags
+(define-map market-tags
+  uint
+  (list 5 (string-ascii 20)))
+
+;; Set market tags
+(define-public (set-market-tags (market-id uint) (tags (list 5 (string-ascii 20))))
+  (begin
+    (asserts! (is-market-creator-or-owner market-id) error-unauthorized)
+    (map-set market-tags market-id tags)
+    (ok true)))
+
+;; Get market tags
+(define-read-only (get-market-tags (market-id uint))
+  (default-to (list) (map-get? market-tags market-id)))
+
+;; Parent-child market relationship
+(define-map conditional-markets
+  uint  ;; child market-id
+  {
+    parent-market-id: uint,
+    parent-outcome: (string-ascii 50),
+    resolution-logic: (buff 1)  ;; 0x01: auto-resolve, 0x02: oracle resolves
+  })
+
+;; Check conditional market
+(define-read-only (get-conditional-market-parent (market-id uint))
+  (map-get? conditional-markets market-id))
+
+;; Check if market is conditional
+(define-read-only (is-conditional-market (market-id uint))
+  (is-some (map-get? conditional-markets market-id)))
